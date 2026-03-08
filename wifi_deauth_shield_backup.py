@@ -1,25 +1,7 @@
 #!/usr/bin/env python3
-import subprocess, sys, os, time, signal, threading, logging
+import subprocess, sys, os, time, signal, threading
 from collections import defaultdict
 from datetime import datetime
-
-# ─────────────────────────────────────────
-#  LOG FILE SETUP
-# ─────────────────────────────────────────
-logging.basicConfig(
-    filename='deauth_alerts.log',
-    level=logging.INFO,
-    format='%(asctime)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-def write_log(attack_type, src, dst, count, reason, severity, patterns):
-    pattern_names = " | ".join(p['name'] for p in patterns)
-    logging.info(
-        f"ATTACK DETECTED | Type: {attack_type} | Severity: {severity} | "
-        f"Source: {src} | Target: {dst} | Packets: {count} | "
-        f"Reason: {reason} | Patterns: {pattern_names}"
-    )
 
 try:
     from scapy.all import sniff, Dot11, Dot11Deauth, Dot11Beacon, Dot11Elt, RadioTap, Dot11Disas
@@ -55,7 +37,7 @@ def banner():
   ║  {C}░██║░░██╗░░██║██║██╔════╝██║{G}                          ║
   ║  {C}░╚██╗████╗██╔╝██║█████╗░░██║{G}                          ║
   ║  {C}░░████╔═████║░██║██╔══╝░░██║{G}                          ║
-  ║  {C}░░╚██╗████╗██╔╝██║██║░░░░░██║{G}                         ║
+  ║  {C}░░╚██╔╝░╚██╔╝░██║██║░░░░░██║{G}                          ║
   ║  {C}░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░░░░╚═╝{G}                         ║
   ║                                                          ║
   ║  {G}█▀▄ █▀▀ ▄▀█ █░█ ▀█▀ █░█   █▀ █░█ █ █▀▀ █░░ █▀▄{G}     ║
@@ -65,10 +47,6 @@ def banner():
   ╠══════════════════════════════════════════════════════════╣
   ║  {Y}⚡ WiFi Deauth Attack Shield v2.0 — Pattern Edition{G}    ║
   ║  {DIM}Initializing matrix... Loading attack signatures...{G}    ║
-  ╠══════════════════════════════════════════════════════════╣
-  ║  {R}⚠  FOR EDUCATIONAL AND DEFENSIVE USE ONLY           {G}  ║
-  ║  {R}   Do not use on networks you do not own            {G}  ║
-  ║  {DIM}   Author: GopiVallabha | github.com/GopiVallbha{G}     ║
   ╚══════════════════════════════════════════════════════════╝
 {RST}""")
 
@@ -93,10 +71,6 @@ def get_severity(count, patterns):
 def log_alert(src, dst, count, patterns, reason):
     severity  = get_severity(count, patterns)
     sev_color = R if severity in ["CRITICAL","HIGH"] else Y
-
-    # ── Save to log file ──
-    write_log("DEAUTH ATTACK", src, dst, count, reason, severity, patterns)
-
     print(f"""
   {G}╔{'═'*62}╗{RST}
   {G}║{RST} {R}{BOLD}{BLINK}  [!!!] DEAUTH ATTACK DETECTED [{ts()}]{RST}              {G}║{RST}
@@ -312,7 +286,6 @@ def print_attack_summary():
     else:
         print(f"  {G}║{RST}  {G}No attacks detected — You were safe!{RST}               {G}║{RST}")
     print(f"  {G}╚{'═'*58}╝{RST}\n")
-    log_info(f"Session ended. Total deauths: {total_deauth} | Attacks: {len(attack_log)} | Networks: {len(nearby_networks)}")
 
 def scan_networks(iface):
     stop_hop = threading.Event()
@@ -335,7 +308,6 @@ def monitor_deauth(iface):
     print(f"  {G}║{RST}  {BOLD}{C}  PHASE 2: Monitoring [Ctrl+C to stop]{RST}           {G}║{RST}")
     print(f"  {G}║{RST}  {DIM}  Threshold : {DEAUTH_THRESHOLD} deauths in {TIME_WINDOW}s = ALERT{RST}             {G}║{RST}")
     print(f"  {G}║{RST}  {DIM}  Detecting : Flood|Spoof|Broadcast|Combo|EvilTwin{RST}  {G}║{RST}")
-    print(f"  {G}║{RST}  {DIM}  Log file  : deauth_alerts.log{RST}                     {G}║{RST}")
     print(f"  {G}╚{'═'*58}╝{RST}\n")
     try:
         sniff(iface=iface,prn=packet_handler,store=False,
@@ -351,7 +323,7 @@ def cleanup(sig=None, frame=None):
     if monitor_iface:
         disable_monitor_mode(monitor_iface)
     print_attack_summary()
-    print(f"  {G}{BOLD}[+] Shield deactivated. Alerts saved to deauth_alerts.log{RST}\n")
+    print(f"  {G}{BOLD}[+] Shield deactivated. Stay safe!{RST}\n")
     sys.exit(0)
 
 def main():
